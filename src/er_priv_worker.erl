@@ -77,12 +77,11 @@ init([]) ->
   {ok, #state{}}.
 
 handle_call({get_tab, Name, Tab, Pid}, _From, State) ->
-  Self = self(),
-  Repl = case ets:info(Tab, owner) of
-           Self ->
+  Repl = case ets:info(Tab, owner) == self() of
+           true ->
              ets:give_away(Tab, Pid, {er_priv, Name}),
              Tab;
-           _ ->
+           false ->
              {error, not_owner}
          end,
   %% ets:delete(?META, Name),
