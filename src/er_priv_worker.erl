@@ -138,7 +138,7 @@ code_change(_OldVsn, State, _Extra) ->
 del_tab(Name) ->
   case ets:lookup(?META, Name) of
     [{Name, Tab}] ->
-      ets:info(Tab) /= undefined andalso ets:delete(Tab),
+      ets:info(Tab, owner) == self() andalso ets:delete(Tab),
       ets:delete(?META, Name);
     _ -> true
   end.
