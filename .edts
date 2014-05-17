@@ -1,6 +1,5 @@
 :name "er-edts"
 :node-sname "er-edts"
 :lib-dirs '("deps" "apps")
-;; :start-command "bash start-dev.sh rot-edts"
 :app-include-dirs '("include")
 :project-include-dirs '()
