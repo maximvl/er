@@ -113,6 +113,12 @@ handle_cast(_Msg, State) ->
   {noreply, State}.
 
 handle_info({'ETS-TRANSFER', Tab, _FromPid, {er_priv, Name}}, State) ->
+  case ets:lookup(?META, Name) of
+    [{Name, Tab2}] when Tab /= Tab2 ->
+      error_logger:error_msg("~p: new table is already registered as ~p",
+                             [?MODULE, Name]);
+    _ -> ok
+  end,
   %% del_tab(Name),  % deletes tab contents too
   ets:insert(?META, {Name, Tab}),
   {noreply, State};
