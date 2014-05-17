@@ -11,8 +11,8 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, get_tab/1, new_or_get/2,
-        new/2, new_or_replace/2, delete/1]).
+-export([start_link/0, get_tab/1, get_or_new/2,
+         new/2, replace_or_new/2, delete/1]).
 
 %% gen_server callbacks
 -export([init/1, handle_call/3, handle_cast/2, handle_info/2,
@@ -29,17 +29,21 @@
 start_link() ->
   gen_server:start_link({local, ?SERVER}, ?MODULE, [], []).
 
+-spec new(any(), list()) -> {ok, ets:table()} | {error, atom()}.
 new(Name, Opts) ->
   case proplists:get_value(named_table, Opts, false) andalso
     not is_atom(Name) of
     true ->
       throw(badarg);
     _ ->
-      ets:member(?META, Name) andalso throw(already_exist),
-      gen_server:call(?SERVER, {new, Name, Opts})
+      case ets:member(?META, Name) of
+        false -> gen_server:call(?SERVER, {new, Name, Opts});
+        true -> {error, already_exist}
+      end
   end.
 
-new_or_replace(Name, Opts) ->
+-spec replace_or_new(any(), list()) -> {ok, ets:table()} | {error, atom()}.
+replace_or_new(Name, Opts) ->
   case proplists:get_value(named_table, Opts, false) andalso
     not is_atom(Name) of
     true ->
@@ -48,26 +52,24 @@ new_or_replace(Name, Opts) ->
       gen_server:call(?SERVER, {new, Name, Opts})
   end.
 
-new_or_get(Name, Opts) ->
-  case ets:lookup(?META, Name) of
-    [{Name, Tab}] ->
-      gen_server:call(?SERVER, {get_tab, Name, Tab, self()});
-    _ ->
-      case new(Name, Opts) of
-        {ok, Tab} -> Tab;
-        {E, R} -> erlang:E(R)
-      end
+-spec get_or_new(any(), list()) -> {ok, ets:table()} | {error, atom()}.
+get_or_new(Name, Opts) ->
+  case get_tab(Name) of
+    {ok, Tab} -> {ok, Tab};
+    {error, _}=E -> E;
+    not_found -> new(Name, Opts)
   end.
 
-delete(Name) ->
-  gen_server:call(?SERVER, {del, Name}).
-
+-spec get_tab(any()) -> {ok, ets:table()} | not_found.
 get_tab(Name) ->
   case ets:lookup(?META, Name) of
-    [{Name, Tab}] ->
-      gen_server:call(?SERVER, {get_tab, Name, Tab, self()});
-    _ -> throw(not_found)
+    [{Name, Tab}] -> gen_server:call(?SERVER, {get_tab, Name, Tab, self()});
+    _ -> not_found
   end.
+
+-spec delete(any()) -> ok.
+delete(Name) ->
+  gen_server:call(?SERVER, {del, Name}).
 
 %%%===================================================================
 %%% gen_server callbacks
@@ -80,7 +82,7 @@ handle_call({get_tab, Name, Tab, Pid}, _From, State) ->
   Repl = case ets:info(Tab, owner) == self() of
            true ->
              ets:give_away(Tab, Pid, {er_priv, Name}),
-             Tab;
+             {ok, Tab};
            false ->
              {error, not_owner}
          end,
@@ -135,6 +137,7 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
+-spec del_tab(any()) -> true.
 del_tab(Name) ->
   case ets:lookup(?META, Name) of
     [{Name, Tab}] ->
