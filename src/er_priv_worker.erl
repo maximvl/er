@@ -11,7 +11,7 @@
 -behaviour(gen_server).
 
 %% API
--export([start_link/0, get_tab/1, get_or_new/2,
+-export([start_link/0, get_tab/1, get_or_new/2, obtain_tab/1,
          new/2, replace_or_new/2, delete/1]).
 
 %% gen_server callbacks
@@ -63,7 +63,21 @@ get_or_new(Name, Opts) ->
 -spec get_tab(any()) -> {ok, ets:table()} | not_found.
 get_tab(Name) ->
   case ets:lookup(?META, Name) of
-    [{Name, Tab}] -> gen_server:call(?SERVER, {get_tab, Name, Tab, self()});
+    [{Name, Tab}] ->
+      case ets:info(Tab, type) of
+        undefined ->
+          gen_server:cast(?SERVER, {del, Name}),
+          not_found;
+        _ -> {ok, Tab}
+      end;
+    _ -> not_found
+  end.
+
+-spec obtain_tab(any()) -> {ok, ets:table()} | not_found.
+obtain_tab(Name) ->
+  case ets:lookup(?META, Name) of
+    [{Name, Tab}] ->
+      gen_server:call(?SERVER, {obtain_tab, Name, Tab, self()});
     _ -> not_found
   end.
 
@@ -78,7 +92,7 @@ init([]) ->
   ets:new(?META, [protected, named_table]),
   {ok, #state{}}.
 
-handle_call({get_tab, Name, Tab, Pid}, _From, State) ->
+handle_call({obtain_tab, Name, Tab, Pid}, _From, State) ->
   Repl = case ets:info(Tab, owner) == self() of
            true ->
              ets:give_away(Tab, Pid, {er_priv, Name}),
