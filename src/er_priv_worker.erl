@@ -56,8 +56,8 @@ replace_or_new(Name, Opts) ->
 get_or_new(Name, Opts) ->
   case get_tab(Name) of
     {ok, Tab} -> {ok, Tab};
-    {error, _}=E -> E;
-    not_found -> new(Name, Opts)
+    {error, not_found} -> new(Name, Opts);
+    {error, _}=E -> E
   end.
 
 -spec get_tab(any()) -> {ok, ets:table()} | {error, not_found}.
