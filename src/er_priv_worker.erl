@@ -60,25 +60,25 @@ get_or_new(Name, Opts) ->
     not_found -> new(Name, Opts)
   end.
 
--spec get_tab(any()) -> {ok, ets:table()} | not_found.
+-spec get_tab(any()) -> {ok, ets:table()} | {error, not_found}.
 get_tab(Name) ->
   case ets:lookup(?META, Name) of
     [{Name, Tab}] ->
       case ets:info(Tab, type) of
         undefined ->
           gen_server:cast(?SERVER, {del, Name}),
-          not_found;
+          {error, not_found};
         _ -> {ok, Tab}
       end;
-    _ -> not_found
+    _ -> {error, not_found}
   end.
 
--spec obtain_tab(any()) -> {ok, ets:table()} | not_found.
+-spec obtain_tab(any()) -> {ok, ets:table()} | {error, atom()}.
 obtain_tab(Name) ->
   case ets:lookup(?META, Name) of
     [{Name, Tab}] ->
       gen_server:call(?SERVER, {obtain_tab, Name, Tab, self()});
-    _ -> not_found
+    _ -> {error, not_found}
   end.
 
 -spec delete(any()) -> ok.

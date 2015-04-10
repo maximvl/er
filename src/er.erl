@@ -57,7 +57,7 @@ get_public(Id) ->
 get_public_e(Id) ->
   case er_pub_worker:get_tab(Id) of
     {ok, Tab} -> Tab;
-    not_found -> throw(not_found)
+    {error, E} -> throw(E)
   end.
 
 get_protected(Id) ->
@@ -72,7 +72,7 @@ get_private(Id) ->
 get_private_e(Id) ->
   case er_priv_worker:get_tab(Id) of
     {ok, Tab} -> Tab;
-    not_found -> throw(not_found)
+    {error, E} -> throw(E)
   end.
 
 obtain(Id) ->

@@ -1,5 +1,3 @@
 :name "er-edts"
 :node-sname "er-edts"
-:lib-dirs '("deps" "apps")
-:app-include-dirs '("include")
-:project-include-dirs '()
+:lib-dirs '("src")
