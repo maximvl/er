@@ -118,8 +118,7 @@ handle_call({new, Id, Opts}, _From, State) ->
   end;
 
 handle_call({del, Name}, _From, State) ->
-  del_tab(Name),
-  {reply, ok, State};
+  {reply, del_tab(Name), State};
 
 handle_call(_Request, _From, State) ->
   Reply = ok,
@@ -151,11 +150,16 @@ code_change(_OldVsn, State, _Extra) ->
 %%%===================================================================
 %%% Internal functions
 %%%===================================================================
--spec del_tab(any()) -> true.
+-spec del_tab(any()) -> boolean().
 del_tab(Name) ->
   case ets:lookup(?META, Name) of
     [{Name, Tab}] ->
-      ets:info(Tab, owner) == self() andalso ets:delete(Tab),
-      ets:delete(?META, Name);
+      case ets:info(Tab, owner) == self() of
+        true ->
+          ets:delete(Tab),
+          ets:delete(?META, Name),
+          true;
+       false -> false
+      end;
     _ -> true
   end.

@@ -6,7 +6,7 @@
          get_public/1, get_public_e/1,
          get_private/1, get_private_e/1,
          get_protected/1, get_protected_e/1,
-         obtain/1, obtain_e/1,
+         obtain/1, obtain_e/1, return_private/1,
          del_public/1, del_private/1]).
 
 start() ->
@@ -89,3 +89,16 @@ del_public(Id) ->
 
 del_private(Id) ->
   er_priv_worker:delete(Id).
+
+return_private(Id) ->
+    case er_priv_worker:get_tab(Id) of
+        {ok, Tab} ->
+            case ets:info(Tab, owner) == self() of
+                true ->
+                    ets:give_away(Tab, erlang:whereis(er_priv_worker), {er_priv, Id}),
+                    ok;
+                false ->
+                    {error, not_owner}
+            end;
+        Err -> Err
+    end.
