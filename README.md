@@ -1,6 +1,6 @@
 ##About
 
-Er is ETS register. Main goal is to have safe ets owner processes, newer lose tables when process dies and table registration under any erlang term.
+Er is ETS register. Main goal is to have safe ets owner processes, never lose tables when process dies and table registration under any erlang term.
 
 Er has two separate name spaces (processes) for handling public and non-public etses. Public tables accessed as usual, while private and protected should be accepted by a process in a ```ets:give_avay(Tab, _, {er_priv, Name})``` way.
 For non-public tables er automatically sets ```heir``` option, so these tables will be returned back to er if current owner dies and no data will be lost.
